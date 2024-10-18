@@ -1,6 +1,6 @@
 # Gigagit
 
-Welcome to **Gigagit**, an innovative AI platform that gamifies coding, learning, and contributing to GitHub! Our mission is to make coding fun, engaging, and rewarding for everyone. Dive into a world inspired by *Naruto*, where your coding journey is filled with challenges, achievements, and community interactions.
+Welcome to **Gigagit**, an innovative AI platform that gamifies coding, learning, and contributing to GitHub! Our mission is to make coding fun, engaging, and rewarding for everyone. Dive into a world, where your coding journey is filled with challenges, achievements, and community interactions.
 
 ## 🌟 Features
 
