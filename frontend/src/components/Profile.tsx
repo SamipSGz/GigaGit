@@ -2,6 +2,32 @@ import React from 'react';
 import { User, Github, Star, Code2, GitPullRequest, GitCommit, Award, Calendar } from 'lucide-react';
 
 export default function Profile() {
+  const CURRENT_STREAK = 45;
+
+  // Generate mock contribution data for the graph with current streak
+  const generateContributions = () => {
+    const contributions = [];
+    for (let i = 0; i < 52; i++) { // 52 weeks
+      const week = [];
+      for (let j = 0; j < 7; j++) { // 7 days per week
+        const totalDays = i * 7 + j;
+        const daysFromEnd = (52 * 7) - totalDays;
+        
+        // Set high intensity for the current streak days
+        if (daysFromEnd <= CURRENT_STREAK) {
+          week.push(3); // Highest intensity for streak days
+        } else {
+          const intensity = Math.floor(Math.random() * 4); // 0-3 for different intensities
+          week.push(intensity);
+        }
+      }
+      contributions.unshift(week); // Add to start to show most recent contributions on the right
+    }
+    return contributions;
+  };
+
+  const contributions = generateContributions();
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -55,13 +81,43 @@ export default function Profile() {
           {/* Activity Calendar */}
           <div>
             <h2 className="text-xl font-bold text-gray-900 mb-4">Contribution Activity</h2>
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-gray-50 rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-gray-600">Current Streak: 45 days</span>
+                <span className="text-gray-600">Current Streak: <span className="text-green-600 font-semibold">{CURRENT_STREAK} days</span></span>
                 <Calendar className="w-5 h-5 text-gray-500" />
               </div>
-              {/* Placeholder for contribution graph */}
-              <div className="h-32 bg-gray-100 rounded-lg"></div>
+              
+              {/* GitHub-style contribution graph */}
+              <div className="overflow-x-auto">
+                <div className="inline-flex gap-1">
+                  {contributions.map((week, weekIndex) => (
+                    <div key={weekIndex} className="flex flex-col gap-1">
+                      {week.map((intensity, dayIndex) => (
+                        <div
+                          key={dayIndex}
+                          className={`w-3 h-3 rounded-sm transition-colors ${
+                            intensity === 0 ? 'bg-gray-100' :
+                            intensity === 1 ? 'bg-green-200' :
+                            intensity === 2 ? 'bg-green-400' :
+                            'bg-green-600'
+                          }`}
+                          title={`${intensity} contributions`}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Legend */}
+              <div className="flex items-center justify-end space-x-2 mt-4 text-xs text-gray-500">
+                <span>Less</span>
+                <div className="w-3 h-3 rounded-sm bg-gray-100"></div>
+                <div className="w-3 h-3 rounded-sm bg-green-200"></div>
+                <div className="w-3 h-3 rounded-sm bg-green-400"></div>
+                <div className="w-3 h-3 rounded-sm bg-green-600"></div>
+                <span>More</span>
+              </div>
             </div>
           </div>
         </div>
