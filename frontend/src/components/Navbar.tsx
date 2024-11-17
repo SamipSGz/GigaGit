@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Github, Star, Trophy, Award, BookOpen, User } from 'lucide-react';
+import { Github, Star, Trophy, Award, BookOpen, User, Code2 } from 'lucide-react';
 
 export default function Navbar() {
   return (
@@ -17,6 +17,7 @@ export default function Navbar() {
             <NavItem to="/achievements" icon={<Star className="w-5 h-5" />} text="Achievements" />
             <NavItem to="/rewards" icon={<Award className="w-5 h-5" />} text="Rewards" />
             <NavItem to="/learn" icon={<BookOpen className="w-5 h-5" />} text="Learn" />
+            <NavItem to="/challenges" icon={<Code2 className="w-5 h-5" />} text="Challenges" />
             
             <NavLink to="/profile" className="flex items-center space-x-3 ml-8 hover:opacity-80 transition-opacity">
               <img

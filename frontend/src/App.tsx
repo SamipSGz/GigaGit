@@ -8,6 +8,7 @@ import Achievements from './components/Achievements';
 import Rewards from './components/Rewards';
 import Learning from './components/Learning';
 import Profile from './components/Profile';
+import Challenges from './components/Challenges';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="rewards" element={<Rewards />} />
           <Route path="learn" element={<Learning />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="challenges" element={<Challenges />} />
         </Route>
       </Routes>
     </BrowserRouter>
