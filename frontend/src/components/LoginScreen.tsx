@@ -1,12 +1,37 @@
 import React from 'react';
 import { Github, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getAuth, GithubAuthProvider, signInWithPopup } from 'firebase/auth';
+import {auth} from '../components/firebaseconfig'
+import {useAuth} from '../components/AuthContext'
+// Import the functions you need from the SDKs you need
+
+
+
+
+
 
 export default function LoginScreen() {
   const navigate = useNavigate();
+  const { setGithubToken, setUser } = useAuth();
 
-  const handleLogin = () => {
-    navigate('/dashboard');
+  const handleLogin = async () => {
+    const provider = new GithubAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      // User is signed in, you can retrieve user information
+      const credential = GithubAuthProvider.credentialFromResult(result);
+      const githubToken = credential?.accessToken;
+
+      if(githubToken){
+        setGithubToken(githubToken);
+        setUser(result.user)
+      }
+      
+      navigate('/dashboard'); // Navigate to dashboard on successful login
+    } catch (error) {
+      console.error('Error during login:', error.message);
+    }
   };
 
   return (

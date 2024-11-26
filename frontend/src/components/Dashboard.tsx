@@ -1,58 +1,86 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Code2, GitPullRequest, Star, Users, Activity, Award } from 'lucide-react';
-import CodeScoring from './CodeScoring';
+import { getAuth, GithubAuthProvider, signInWithPopup } from 'firebase/auth';
+import { useAuth } from './AuthContext';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const [userData, setUserData] = useState(null);
+  const [repoData, setRepoData] = useState([]);
+  const { githubToken, user } = useAuth();
+
+  useEffect(() => {
+
+    if (!githubToken) {
+      // Redirect to login if no token
+      navigate('/login');
+      return;
+    }
+
+    // Fetch user info
+    fetch('https://api.github.com/user', {
+      headers: {
+        Authorization: `Bearer ${githubToken}`,
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => setUserData(data))
+      .catch((error) => console.error('Error fetching user data:', error));
+
+    // Fetch repositories
+    fetch('https://api.github.com/user/repos', {
+      headers: {
+        Authorization: `Bearer ${githubToken}`,
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => setRepoData(data))
+      .catch((error) => console.error('Error fetching repositories:', error));
+  }, [githubToken]);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Welcome back, Developer!</h1>
+        <h1 className="text-3xl font-bold text-gray-900">
+          Welcome back, {userData?.name || 'Developer'}!
+        </h1>
         <p className="text-gray-600 mt-2">Your coding journey continues. Keep pushing!</p>
       </header>
-
-      <div className="mb-8">
-        <CodeScoring />
-      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <StatCard
           icon={<Code2 className="w-6 h-6 text-emerald-600" />}
-          title="Contributions"
-          value="2,547"
+          title="Public Repositories"
+          value={userData?.public_repos || 'N/A'}
           change="+12%"
           positive={true}
         />
         <StatCard
           icon={<GitPullRequest className="w-6 h-6 text-blue-600" />}
-          title="Pull Requests"
-          value="183"
+          title="Followers"
+          value={userData?.followers || 'N/A'}
           change="+5%"
           positive={true}
         />
         <StatCard
           icon={<Star className="w-6 h-6 text-yellow-500" />}
           title="Repository Stars"
-          value="1.2k"
+          value={repoData.reduce((sum, repo) => sum + repo.stargazers_count, 0)}
           change="+8%"
           positive={true}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ActivityFeed />
+        <ActivityFeed repoData={repoData} />
         <AchievementsPanel />
       </div>
     </div>
   );
 }
 
-function StatCard({ icon, title, value, change, positive }: {
-  icon: React.ReactNode;
-  title: string;
-  value: string;
-  change: string;
-  positive: boolean;
-}) {
+function StatCard({ icon, title, value, change, positive }: any) {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
       <div className="flex items-center justify-between">
@@ -67,45 +95,24 @@ function StatCard({ icon, title, value, change, positive }: {
   );
 }
 
-function ActivityFeed() {
-  const activities = [
-    {
-      icon: <Code2 className="w-5 h-5" />,
-      title: "Merged Pull Request",
-      description: "Feature: Add user authentication",
-      time: "2h ago"
-    },
-    {
-      icon: <Star className="w-5 h-5" />,
-      title: "Earned New Badge",
-      description: "Code Quality Champion",
-      time: "5h ago"
-    },
-    {
-      icon: <Users className="w-5 h-5" />,
-      title: "New Collaboration",
-      description: "Joined project: OpenAI-Integration",
-      time: "1d ago"
-    }
-  ];
-
+function ActivityFeed({ repoData }: { repoData: any[] }) {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
+        <h2 className="text-xl font-bold text-gray-900">Recent Repositories</h2>
         <Activity className="w-5 h-5 text-gray-500" />
       </div>
       <div className="space-y-4">
-        {activities.map((activity, index) => (
-          <div key={index} className="flex items-start space-x-4">
+        {repoData.slice(0, 5).map((repo) => (
+          <div key={repo.id} className="flex items-start space-x-4">
             <div className="bg-gray-50 p-2 rounded-lg">
-              {activity.icon}
+              <Code2 className="w-5 h-5" />
             </div>
             <div className="flex-1">
-              <h3 className="text-sm font-medium text-gray-900">{activity.title}</h3>
-              <p className="text-sm text-gray-600">{activity.description}</p>
+              <h3 className="text-sm font-medium text-gray-900">{repo.name}</h3>
+              <p className="text-sm text-gray-600">{repo.description || 'No description'}</p>
             </div>
-            <span className="text-xs text-gray-500">{activity.time}</span>
+            <span className="text-xs text-gray-500">{repo.language}</span>
           </div>
         ))}
       </div>
@@ -117,19 +124,19 @@ function AchievementsPanel() {
   const achievements = [
     {
       icon: <Award className="w-6 h-6 text-yellow-500" />,
-      title: "Bug Hunter",
-      progress: 75
+      title: 'Bug Hunter',
+      progress: 75,
     },
     {
       icon: <Star className="w-6 h-6 text-purple-500" />,
-      title: "Popular Creator",
-      progress: 60
+      title: 'Popular Creator',
+      progress: 60,
     },
     {
       icon: <Users className="w-6 h-6 text-blue-500" />,
-      title: "Team Player",
-      progress: 90
-    }
+      title: 'Team Player',
+      progress: 90,
+    },
   ];
 
   return (
