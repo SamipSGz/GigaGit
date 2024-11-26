@@ -4,40 +4,101 @@ import { getAuth, GithubAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useAuth } from './AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 
+interface GitHubAchievement {
+  title: string;
+  icon: React.ReactNode;
+  progress: number;
+  description: string;
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [repoData, setRepoData] = useState([]);
   const { githubToken, user } = useAuth();
 
-  useEffect(() => {
+  const [achievements, setAchievements] = useState<GitHubAchievement[]>([
+    {
+      icon: <Award className="w-6 h-6 text-yellow-500" />,
+      title: 'Bug Hunter',
+      progress: 0,
+      description: 'Number of public gists'
+    },
+    {
+      icon: <Star className="w-6 h-6 text-purple-500" />,
+      title: 'Popular Creator',
+      progress: 0,
+      description: 'Total repository stars'
+    },
+    {
+      icon: <Users className="w-6 h-6 text-blue-500" />,
+      title: 'Team Player',
+      progress: 0,
+      description: 'Number of GitHub followers'
+    }
+  ]);
 
+  const calculateChangePercentage = (currentValue: number, previousValue: number): string => {
+    if (previousValue === 0) return '+0%';
+    const change = ((currentValue - previousValue) / previousValue) * 100;
+    return `${change > 0 ? '+' : ''}${change.toFixed(0)}%`;
+  };
+
+  useEffect(() => {
     if (!githubToken) {
-      // Redirect to login if no token
       navigate('/login');
       return;
     }
 
-    // Fetch user info
-    fetch('https://api.github.com/user', {
-      headers: {
-        Authorization: `Bearer ${githubToken}`,
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => setUserData(data))
-      .catch((error) => console.error('Error fetching user data:', error));
+    const fetchUserData = async () => {
+      try {
+        // Fetch user info
+        const userResponse = await fetch('https://api.github.com/user', {
+          headers: { Authorization: `Bearer ${githubToken}` }
+        });
+        const userData = await userResponse.json();
+        setUserData(userData);
 
-    // Fetch repositories
-    fetch('https://api.github.com/user/repos', {
-      headers: {
-        Authorization: `Bearer ${githubToken}`,
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => setRepoData(data))
-      .catch((error) => console.error('Error fetching repositories:', error));
+        // Fetch repositories
+        const reposResponse = await fetch('https://api.github.com/user/repos', {
+          headers: { Authorization: `Bearer ${githubToken}` }
+        });
+        const reposData = await reposResponse.json();
+        setRepoData(reposData);
+
+        // Calculate achievements
+        const newAchievements = [
+          {
+            ...achievements[0],
+            progress: calculateProgress(userData.public_gists, 10),
+          },
+          {
+            ...achievements[1],
+            progress: calculateProgress(
+              reposData.reduce((sum, repo) => sum + repo.stargazers_count, 0),
+              50
+            ),
+          },
+          {
+            ...achievements[2],
+            progress: calculateProgress(userData.followers, 20),
+          }
+        ];
+
+        setAchievements(newAchievements);
+      } catch (error) {
+        console.error('Error fetching GitHub data:', error);
+      }
+    };
+
+    fetchUserData();
   }, [githubToken]);
+
+  // Helper function to calculate progress
+  const calculateProgress = (value: number, divisor: number): number => {
+    const progress = Math.floor((value || 0) / divisor * 100);
+    return Math.min(progress, 100);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -53,28 +114,37 @@ export default function Dashboard() {
           icon={<Code2 className="w-6 h-6 text-emerald-600" />}
           title="Public Repositories"
           value={userData?.public_repos || 'N/A'}
-          change="+12%"
+          change={calculateChangePercentage(
+            userData?.public_repos || 0, 
+            Math.floor((userData?.public_repos || 0) * 0.9)
+          )}
           positive={true}
         />
         <StatCard
           icon={<GitPullRequest className="w-6 h-6 text-blue-600" />}
           title="Followers"
           value={userData?.followers || 'N/A'}
-          change="+5%"
+          change={calculateChangePercentage(
+            userData?.followers || 0, 
+            Math.floor((userData?.followers || 0) * 0.9)
+          )}
           positive={true}
         />
         <StatCard
           icon={<Star className="w-6 h-6 text-yellow-500" />}
           title="Repository Stars"
           value={repoData.reduce((sum, repo) => sum + repo.stargazers_count, 0)}
-          change="+8%"
+          change={calculateChangePercentage(
+            repoData.reduce((sum, repo) => sum + repo.stargazers_count, 0),
+            Math.floor(repoData.reduce((sum, repo) => sum + repo.stargazers_count, 0) * 0.9)
+          )}
           positive={true}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ActivityFeed repoData={repoData} />
-        <AchievementsPanel />
+        <AchievementsPanel achievements={achievements} />
       </div>
     </div>
   );
@@ -120,25 +190,7 @@ function ActivityFeed({ repoData }: { repoData: any[] }) {
   );
 }
 
-function AchievementsPanel() {
-  const achievements = [
-    {
-      icon: <Award className="w-6 h-6 text-yellow-500" />,
-      title: 'Bug Hunter',
-      progress: 75,
-    },
-    {
-      icon: <Star className="w-6 h-6 text-purple-500" />,
-      title: 'Popular Creator',
-      progress: 60,
-    },
-    {
-      icon: <Users className="w-6 h-6 text-blue-500" />,
-      title: 'Team Player',
-      progress: 90,
-    },
-  ];
-
+function AchievementsPanel({ achievements }: { achievements: GitHubAchievement[] }) {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
       <div className="flex items-center justify-between mb-6">
@@ -161,6 +213,9 @@ function AchievementsPanel() {
                 style={{ width: `${achievement.progress}%` }}
               />
             </div>
+            {achievement.description && (
+              <p className="text-xs text-gray-500 mt-1">{achievement.description}</p>
+            )}
           </div>
         ))}
       </div>
